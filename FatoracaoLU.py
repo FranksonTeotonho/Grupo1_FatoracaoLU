@@ -162,6 +162,10 @@ class FatoracaoLU:
     backgroundImage, backgroundImageRect = load_png("BG.png")
     # Imagem para exibirResultados
     resultadoImage, resultadoImageRect = load_png("Background_default_sb.jpg")
+    # Imagem para passos
+    passosImage, passosImageRect = load_png("passos.png")
+    # Imagem para exibirResultadosFinais
+    resultadoFinalImage, resultadoFinalImageRect = load_png("ResultadoFinal.png")
 
     def __init__(self):
         # Inicia screen
@@ -209,13 +213,13 @@ class FatoracaoLU:
         self.addLabel("Resultados",(220,300),100)
 
     def passosScreen(self):
-        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        self.background.blit(self.passosImage, self.passosImageRect)
         numero = pygame.font.Font(None, 50)
         label = numero.render("Passos", 1, (255, 215, 0))
         self.background.blit(label, (335, 90))
 
     def finalScreen(self):
-        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        self.background.blit(self.resultadoFinalImage, self.resultadoFinalImageRect)
         numero = pygame.font.Font(None, 50)
         label = numero.render("Resultado", 1, (0, 128, 0))
         self.background.blit(label, (320, 90))
@@ -345,9 +349,9 @@ class FatoracaoLU:
                 #Exibindo passos
                 self.passosScreen()
                 #Matriz A (U)
-                self.exibeMatriz(passosA[i], 75, 200,100,50,50)
+                self.exibeMatriz(passosA[i], 110, 270,100,50,50)
                 #Matriz L
-                self.exibeMatriz(passosL[i], 450, 200,100,50,50)
+                self.exibeMatriz(passosL[i], 450, 270,100,50,50)
                 self.resetScreen()
                 self.render()
                 #Timer
@@ -356,15 +360,15 @@ class FatoracaoLU:
             #Resultado final
             self.finalScreen()
             # Matriz A (U)
-            self.exibeMatriz(passosA[len(passosA)-1], 75, 200,100,50,50)
+            self.exibeMatriz(passosA[len(passosA)-1], 140, 210,75,40,35)
             # Matriz L
-            self.exibeMatriz(passosL[len(passosL)-1], 450, 200,100,50,50)
+            self.exibeMatriz(passosL[len(passosL)-1], 460, 210,75,40,35)
             #vetor b
-            self.exibeVetor(b,120,400,50,50)
+            self.exibeVetor(b,165,375,40,45)
             #vetor y
-            self.exibeVetor(y, 320, 400, 50, 50)
+            self.exibeVetor(y, 390, 375, 40, 45)
             #vetor x
-            self.exibeVetor(x, 520, 400, 50, 50)
+            self.exibeVetor(x, 600, 375, 40, 45)
             self.resetScreen()
             self.render()
 
@@ -409,9 +413,9 @@ class FatoracaoLU:
                 # Exibindo passos
                 self.passosScreen()
                 # Matriz A (U)
-                self.exibeMatriz(passosA[i], 75, 200, 75, 45, 30)
+                self.exibeMatriz(passosA[i], 120, 255, 70, 45, 25)
                 # Matriz L
-                self.exibeMatriz(passosL[i], 450, 200, 75, 45, 30)
+                self.exibeMatriz(passosL[i], 455, 255, 70, 45, 25)
                 self.resetScreen()
                 self.render()
                 # Timer
@@ -420,15 +424,15 @@ class FatoracaoLU:
             # Resultado final
             self.finalScreen()
             # Matriz A (U)
-            self.exibeMatriz(passosA[len(passosA) - 1], 75, 200, 75, 45, 30)
+            self.exibeMatriz(passosA[len(passosA) - 1], 140, 205, 55, 30, 25)
             # Matriz L
-            self.exibeMatriz(passosL[len(passosL) - 1], 450, 200, 75, 45, 30)
+            self.exibeMatriz(passosL[len(passosL) - 1], 460, 205, 55, 30, 25)
             # vetor b
-            self.exibeVetor(b, 120, 400, 30, 30)
+            self.exibeVetor(b, 165, 375, 30, 30)
             # vetor y
-            self.exibeVetor(y, 320, 400, 30, 30)
+            self.exibeVetor(y, 390, 375, 30, 30)
             # vetor x
-            self.exibeVetor(x, 520, 400, 30, 30)
+            self.exibeVetor(x, 600, 375, 30, 30)
             self.resetScreen()
             self.render()
 
