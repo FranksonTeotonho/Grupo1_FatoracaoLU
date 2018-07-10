@@ -7,7 +7,7 @@ pygame.init()
 
 # Faz o pivoteamento recebendo a matriz A, o vetor resposta V
 # a matriz de pivoteamento P e o índice da coluna
-def Pivoting(A, V, P, L, iter, passosA):
+def Pivoting(A, V, P, L, iter):
     Maior = abs(A[iter, iter])
     MaiorI = iter
 
@@ -30,13 +30,11 @@ def Pivoting(A, V, P, L, iter, passosA):
     A[iter, iter:] = A[MaiorI, iter:]
     A[MaiorI, iter:] = auxiliary_matrix
 
-    passosA.append(A.copy())
-
-    return A, V, P, L, passosA  # Retorna a matriz A, o vetor resposta e a matriz de permutação
+    return A, V, P, L  # Retorna a matriz A, o vetor resposta e a matriz de permutação
 
 
 # Recebe a matriz, o vetor resposta V, a matriz de coeficientes L e a coluna desejada
-def LUGaussElimination(A, L, iter, passosA):
+def LUGaussElimination(A, L, iter, passosA, passosL):
     for i in range(iter + 1, int(np.sqrt(A.size))):
         try:  # Verifica se o pivot é zero
             Aux = A[i, iter] / A[iter, iter]
@@ -50,8 +48,9 @@ def LUGaussElimination(A, L, iter, passosA):
             A[i, j] = A[i, j] - A[iter, j] * L[i, iter]  # Multiplica as linhas
 
         passosA.append(A.copy())
+        passosL.append(L.copy())
 
-    return A, L, passosA  # Retorna  matriz atual, vetor resposta e matriz L
+    return A, L, passosA, passosL  # Retorna  matriz atual, vetor resposta e matriz L
 
 
 # Cria uma matriz de zeros
@@ -77,12 +76,12 @@ def IdMatrix(Tam):
 
 
 # Faz a Fatoração LU
-def LUDecomposition(A, V, L, P, passosA):
+def LUDecomposition(A, V, L, P, passosA, passosL):
     for i in range(0, int(np.sqrt(A.size))):  # Para cada coluna da matriz nxn
-        A, V, P, L, passosA = Pivoting(A, V, P, L, i, passosA)  # Faz o pivoteamento de linhas
-        A, L, passosA = LUGaussElimination(A, L, i, passosA)  # Faz a fatoração LU na Coluna
+        A, V, P, L = Pivoting(A, V, P, L, i)  # Faz o pivoteamento de linhas
+        A, L, passosA, passosL = LUGaussElimination(A, L, i, passosA, passosL)  # Faz a fatoração LU na Coluna
 
-    return A, V, L, P, passosA  # Retorna a fatoração
+    return A, V, L, P, passosA, passosL  # Retorna a fatoração
 
 
 # Verifica se uma matriz não possui linhas zeradas
@@ -159,6 +158,8 @@ class FatoracaoLU:
     backgroundInicialImage, backgroundInicialImageRect = load_png("Background_inicial.jpg")
     # Imagem de backgroud default
     backgroundImage, backgroundImageRect = load_png("BG.png")
+    # Imagem para exibirResultados
+    resultadoImage, resultadoImageRect = load_png("Background_default_sb.jpg")
 
     def __init__(self):
         # Inicia screen
@@ -197,9 +198,13 @@ class FatoracaoLU:
         self.background.blit(label, (315, 90))
 
     def addLabel(self, string, posicao, tam):
-        numero = pygame.font.Font(None, tam)
-        label = numero.render(string, 1, (105, 105, 105))
+        lb = pygame.font.Font(None, tam)
+        label = lb.render(string, 1, (105, 105, 105))
         self.background.blit(label, posicao)
+
+    def resultadoScreen(self):
+        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        self.addLabel("Resultados",(400,300),100)
 
     def getDigito(self, n, xi, yi, xe, ye, tam, ordem):
         A = []
@@ -272,24 +277,43 @@ class FatoracaoLU:
 
     def matriz33(self):
         passosA = []
+        passosL = []
         A, V = self.getDigito(12, 210, 200, 110, 100, 50, 3)
 
         if (len(A) == 9) and (len(V) == 3):
             print("Matriz completa")
-
+            #Calcula resultados
             A = np.matrix(A).astype(np.float64)  # Aceita a matriz de entrada
             A = A.reshape((3, 3))
             Tam = int(np.sqrt(A.size))  # Calcula o n da matrix nxn
 
             V = [np.float64(x) for x in V]  # Transforma a entrada de String para Float
+            b = V
+
 
             L = IdMatrix(Tam)  # Faz a matriz Identidade em L
             P = ZeroMatrix(Tam)  # Inicia a matriz de Permutações
 
-            A, V, L, P, passosA = LUDecomposition(A, V, L, P, passosA)  # Faz a fatoração LU
+            A, V, L, P, passosA, passosL = LUDecomposition(A, V, L, P, passosA, passosL)  # Faz a fatoração LU
             print(SolveSystem(A, L, V))  # Resolve o sistema
+
+            #exibe resultados
+            for a in passosA:
+                print("==========Matriz A============")
+                print(a)
+
+            for l in passosL:
+                print("==========Matriz L============")
+                print(l)
+
+            print("============Matriz V===========")
+            print(V)
         else:
             print("Matriz incompleta")
+
+        self.resultadoScreen()
+        self.resetScreen()
+        self.render()
 
     def matriz44(self):
         A, V = self.getDigito(20, 210, 200, 80, 70, 40, 4)
