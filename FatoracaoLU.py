@@ -344,7 +344,7 @@ class FatoracaoLU:
             self.render()
 
             time.sleep(1)
-            for i in range(len(passosA) - 1):
+            for i in range(len(passosA)):
 
                 #Exibindo passos
                 self.passosScreen()
@@ -409,7 +409,7 @@ class FatoracaoLU:
             self.render()
 
             time.sleep(1)
-            for i in range(len(passosA) - 1):
+            for i in range(len(passosA)):
                 # Exibindo passos
                 self.passosScreen()
                 # Matriz A (U)
