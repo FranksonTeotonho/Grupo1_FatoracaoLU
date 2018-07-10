@@ -1,7 +1,9 @@
-import pygame, os, sys
+import pygame, os, sys, time
 import numpy as np
 
 # Inicializando pygame
+from numpy.testing.nose_tools.parameterized import param
+
 pygame.init()
 
 
@@ -125,7 +127,7 @@ def SolveSystem(A, L, V):
         exit()
     Tamanho = int(np.sqrt(A.size))  # Pega o tamanho n da matriz A
     Respostas = SolveLower(L, V, Tamanho)
-    return SolveUpper(A, Respostas, Tamanho)
+    return Respostas ,SolveUpper(A, Respostas, Tamanho)
 
 
 ########################################### INTERFACE GRAFICA ################################
@@ -204,7 +206,37 @@ class FatoracaoLU:
 
     def resultadoScreen(self):
         self.background.blit(self.resultadoImage, self.resultadoImageRect)
-        self.addLabel("Resultados",(400,300),100)
+        self.addLabel("Resultados",(220,300),100)
+
+    def passosScreen(self):
+        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+
+    def finalScreen(self):
+        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        numero = pygame.font.Font(None, 50)
+        label = numero.render("Resultado", 1, (0, 0, 0))
+        self.background.blit(label, (315, 90))
+
+    def exibeMatriz(self, matriz, xi, yi, xe, ye, tam):
+
+        x = xi
+        y = yi
+
+        for i in matriz:
+            i = np.array(i)
+            for j in i[0]:
+                self.addLabel(str(j), (x, y), tam)
+                x = x + xe
+
+            x = xi
+            y = y + ye
+
+    def exibeVetor(self, vetor, xi, yi, ye, tam):
+
+        y = yi
+        for i in vetor:
+            self.addLabel(str(i), (xi, y), tam)
+            y = y +ye
 
     def getDigito(self, n, xi, yi, xe, ye, tam, ordem):
         A = []
@@ -258,7 +290,6 @@ class FatoracaoLU:
                         self.addLabel(string, (x, y), tam)
                         self.resetScreen()
                         self.render()
-                        print("Voce pressionou enter: " + str(i) + " vezes")
                         # Limpando cache
                         string = []
 
@@ -281,39 +312,60 @@ class FatoracaoLU:
         A, V = self.getDigito(12, 210, 200, 110, 100, 50, 3)
 
         if (len(A) == 9) and (len(V) == 3):
-            print("Matriz completa")
+            print("Todos os inputs adicionados")
             #Calcula resultados
             A = np.matrix(A).astype(np.float64)  # Aceita a matriz de entrada
             A = A.reshape((3, 3))
             Tam = int(np.sqrt(A.size))  # Calcula o n da matrix nxn
 
             V = [np.float64(x) for x in V]  # Transforma a entrada de String para Float
-            b = V
-
 
             L = IdMatrix(Tam)  # Faz a matriz Identidade em L
             P = ZeroMatrix(Tam)  # Inicia a matriz de Permutações
 
             A, V, L, P, passosA, passosL = LUDecomposition(A, V, L, P, passosA, passosL)  # Faz a fatoração LU
-            print(SolveSystem(A, L, V))  # Resolve o sistema
+            b = V #Mudança de nome
 
-            #exibe resultados
-            for a in passosA:
-                print("==========Matriz A============")
-                print(a)
+            y, x = SolveSystem(A, L, V)  # Resolve o sistema
 
-            for l in passosL:
-                print("==========Matriz L============")
-                print(l)
+            #Tela de apresentação de resultados
+            self.resultadoScreen()
+            self.resetScreen()
+            self.render()
 
-            print("============Matriz V===========")
-            print(V)
+            time.sleep(1)
+            for i in range(len(passosA) - 1):
+
+                #Exibindo passos
+                self.passosScreen()
+                #Matriz A (U)
+                self.exibeMatriz(passosA[i], 75, 200,100,50,55)
+                #Matriz L
+                self.exibeMatriz(passosL[i], 450, 200,100,50,55)
+                self.resetScreen()
+                self.render()
+                #Timer
+                time.sleep(1)
+
+            #Resultado final
+            self.finalScreen()
+            # Matriz A (U)
+            self.exibeMatriz(passosA[len(passosA)-1], 75, 200,100,50,55)
+            # Matriz L
+            self.exibeMatriz(passosL[len(passosL)-1], 450, 200,100,50,55)
+            #vetor b
+            self.exibeVetor(b,120,400,50,55)
+            #vetor y
+            self.exibeVetor(y, 320, 400, 50, 55)
+            #vetor x
+            self.exibeVetor(x, 520, 400, 50, 55)
+            self.resetScreen()
+            self.render()
+
         else:
-            print("Matriz incompleta")
+            print("Erro ao adicionar todos os inputs")
 
-        self.resultadoScreen()
-        self.resetScreen()
-        self.render()
+
 
     def matriz44(self):
         A, V = self.getDigito(20, 210, 200, 80, 70, 40, 4)
