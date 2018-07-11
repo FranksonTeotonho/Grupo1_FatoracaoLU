@@ -1,6 +1,10 @@
 import pygame, os, sys, time
 import numpy as np
 
+np.seterr(all='raise')
+import warnings
+#warnings.filterwarnings("error")
+
 # Inicializando pygame
 from numpy.testing.nose_tools.parameterized import param
 
@@ -36,15 +40,16 @@ def Pivoting(A, V, P, L, iter):
 
 
 # Recebe a matriz, o vetor resposta V, a matriz de coeficientes L e a coluna desejada
-def LUGaussElimination(A, L, iter, passosA, passosL):
+def LUGaussElimination(A, L, iter, passosA, passosL,DZ):
     for i in range(iter + 1, int(np.sqrt(A.size))):
         try:  # Verifica se o pivot é zero
             Aux = A[i, iter] / A[iter, iter]
             L[i, iter] = Aux  # Muda a matriz L com o modificador
             A[i, iter] = 0  # Elimina elementos da coluna menos a diagonal
-        except RuntimeWarning:
+        except FloatingPointError:
             print("Matriz inválida")  # Joga exceção se for zero
-            exit()
+            DZ = -1
+            return A,L, passosA, passosL, DZ
 
         for j in range(iter + 1, int(np.sqrt(A.size))):  # Calcula o multiplicador sobre as linhas
             A[i, j] = A[i, j] - A[iter, j] * L[i, iter]  # Multiplica as linhas
@@ -52,7 +57,7 @@ def LUGaussElimination(A, L, iter, passosA, passosL):
         passosA.append(A.copy())
         passosL.append(L.copy())
 
-    return A, L, passosA, passosL  # Retorna  matriz atual, vetor resposta e matriz L
+    return A, L, passosA, passosL, DZ  # Retorna  matriz atual, vetor resposta e matriz L
 
 
 # Cria uma matriz de zeros
@@ -78,12 +83,12 @@ def IdMatrix(Tam):
 
 
 # Faz a Fatoração LU
-def LUDecomposition(A, V, L, P, passosA, passosL):
+def LUDecomposition(A, V, L, P, passosA, passosL,DZ):
     for i in range(0, int(np.sqrt(A.size))):  # Para cada coluna da matriz nxn
         A, V, P, L = Pivoting(A, V, P, L, i)  # Faz o pivoteamento de linhas
-        A, L, passosA, passosL = LUGaussElimination(A, L, i, passosA, passosL)  # Faz a fatoração LU na Coluna
+        A, L, passosA, passosL, DZ = LUGaussElimination(A, L, i, passosA, passosL,DZ)  # Faz a fatoração LU na Coluna
 
-    return A, V, L, P, passosA, passosL  # Retorna a fatoração
+    return A, V, L, P, passosA, passosL, DZ  # Retorna a fatoração
 
 
 # Verifica se uma matriz não possui linhas zeradas
@@ -121,13 +126,14 @@ def SolveUpper(A, Respostas, Tamanho):
     return Final
 
 
-def SolveSystem(A, L, V):
+def SolveSystem(A, L, V, SU):
     if (not MatrixSolvability(A)):  # Verifica se matriz possui solução única
         print("Matriz A não possui solução única")  # Mostra mensagem de erro
-        exit()
+        SU = -1
+        return  None, None, SU
     Tamanho = int(np.sqrt(A.size))  # Pega o tamanho n da matriz A
     Respostas = SolveLower(L, V, Tamanho)
-    return Respostas ,SolveUpper(A, Respostas, Tamanho)
+    return Respostas ,SolveUpper(A, Respostas, Tamanho), SU
 
 
 ########################################### INTERFACE GRAFICA ################################
@@ -211,6 +217,14 @@ class FatoracaoLU:
     def resultadoScreen(self):
         self.background.blit(self.resultadoImage, self.resultadoImageRect)
         self.addLabel("Resultados",(220,300),100)
+
+    def warningDZScreen(self):
+        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        self.addLabel("Erro: Divisão por zero",(220,300),50)
+
+    def warningSUScreen(self):
+        self.background.blit(self.resultadoImage, self.resultadoImageRect)
+        self.addLabel("Eroo: A solução não é única",(220,300),50)
 
     def passosScreen(self):
         self.background.blit(self.passosImage, self.passosImageRect)
@@ -316,6 +330,8 @@ class FatoracaoLU:
     def matriz33(self):
         passosA = []
         passosL = []
+        SU = 1
+        DZ = 1
         A, V = self.getDigito(12, 210, 200, 110, 100, 50, 3)
 
         if (len(A) == 9) and (len(V) == 3):
@@ -330,48 +346,58 @@ class FatoracaoLU:
             L = IdMatrix(Tam)  # Faz a matriz Identidade em L
             P = ZeroMatrix(Tam)  # Inicia a matriz de Permutações
 
-            A, V, L, P, passosA, passosL = LUDecomposition(A, V, L, P, passosA, passosL)  # Faz a fatoração LU
+            A, V, L, P, passosA, passosL, DZ = LUDecomposition(A, V, L, P, passosA, passosL,DZ)  # Faz a fatoração LU
             b = V #Mudança de nome
 
-            y, x = SolveSystem(A, L, V)  # Resolve o sistema
+            if(DZ != -1):
 
-            # Timer
-            time.sleep(1)
+                y, x, SU = SolveSystem(A, L, V,SU)  # Resolve o sistema
+                # Timer
+                time.sleep(1)
 
-            #Tela de apresentação de resultados
-            self.resultadoScreen()
-            self.resetScreen()
-            self.render()
+                if (SU == 1):
 
-            time.sleep(1)
-            for i in range(len(passosA)):
+                    #Tela de apresentação de resultados
+                    self.resultadoScreen()
+                    self.resetScreen()
+                    self.render()
 
-                #Exibindo passos
-                self.passosScreen()
-                #Matriz A (U)
-                self.exibeMatriz(passosA[i], 110, 270,100,50,50)
-                #Matriz L
-                self.exibeMatriz(passosL[i], 450, 270,100,50,50)
+                    time.sleep(1)
+                    for i in range(len(passosA)):
+
+                        #Exibindo passos
+                        self.passosScreen()
+                        #Matriz A (U)
+                        self.exibeMatriz(passosA[i], 110, 270,100,50,50)
+                        #Matriz L
+                        self.exibeMatriz(passosL[i], 450, 270,100,50,50)
+                        self.resetScreen()
+                        self.render()
+                        #Timer
+                        time.sleep(1.5)
+
+                    #Resultado final
+                    self.finalScreen()
+                    # Matriz A (U)
+                    self.exibeMatriz(passosA[len(passosA)-1], 140, 210,75,40,35)
+                    # Matriz L
+                    self.exibeMatriz(passosL[len(passosL)-1], 460, 210,75,40,35)
+                    #vetor b
+                    self.exibeVetor(b,165,375,40,45)
+                    #vetor y
+                    self.exibeVetor(y, 390, 375, 40, 45)
+                    #vetor x
+                    self.exibeVetor(x, 600, 375, 40, 45)
+                    self.resetScreen()
+                    self.render()
+                else:
+                    self.warningSUScreen()
+                    self.resetScreen()
+                    self.render()
+            else:
+                self.warningDZScreen()
                 self.resetScreen()
                 self.render()
-                #Timer
-                time.sleep(1.5)
-
-            #Resultado final
-            self.finalScreen()
-            # Matriz A (U)
-            self.exibeMatriz(passosA[len(passosA)-1], 140, 210,75,40,35)
-            # Matriz L
-            self.exibeMatriz(passosL[len(passosL)-1], 460, 210,75,40,35)
-            #vetor b
-            self.exibeVetor(b,165,375,40,45)
-            #vetor y
-            self.exibeVetor(y, 390, 375, 40, 45)
-            #vetor x
-            self.exibeVetor(x, 600, 375, 40, 45)
-            self.resetScreen()
-            self.render()
-
         else:
             print("Erro ao adicionar todos os inputs")
 
@@ -380,6 +406,8 @@ class FatoracaoLU:
     def matriz44(self):
         passosA = []
         passosL = []
+        SU = 1
+        DZ = 1
         A, V = self.getDigito(20, 210, 200, 80, 70, 40, 4)
 
         if (len(A) == 16) and (len(V) == 4):
@@ -396,45 +424,58 @@ class FatoracaoLU:
             L = IdMatrix(Tam)  # Faz a matriz Identidade em L
             P = ZeroMatrix(Tam)  # Inicia a matriz de Permutações
 
-            A, V, L, P, passosA, passosL = LUDecomposition(A, V, L, P, passosA, passosL)  # Faz a fatoração LU
+            A, V, L, P, passosA, passosL, DZ = LUDecomposition(A, V, L, P, passosA, passosL,DZ)  # Faz a fatoração LU
             b = V  # Mudança de nome
+            if(DZ == 1):
+                y, x, SU = SolveSystem(A, L, V, SU)  # Resolve o sistema
+                # Timer
+                time.sleep(1)
 
-            y, x = SolveSystem(A, L, V)  # Resolve o sistema
+                if(SU == 1):
 
-            #Timer
-            time.sleep(1)
-            # Tela de apresentação de resultados
-            self.resultadoScreen()
-            self.resetScreen()
-            self.render()
 
-            time.sleep(1)
-            for i in range(len(passosA)):
-                # Exibindo passos
-                self.passosScreen()
-                # Matriz A (U)
-                self.exibeMatriz(passosA[i], 120, 255, 70, 45, 25)
-                # Matriz L
-                self.exibeMatriz(passosL[i], 455, 255, 70, 45, 25)
+                    # Tela de apresentação de resultados
+                    self.resultadoScreen()
+                    self.resetScreen()
+                    self.render()
+
+                    time.sleep(1)
+                    for i in range(len(passosA)):
+                        # Exibindo passos
+                        self.passosScreen()
+                        # Matriz A (U)
+                        self.exibeMatriz(passosA[i], 120, 255, 70, 45, 25)
+                        # Matriz L
+                        self.exibeMatriz(passosL[i], 455, 255, 70, 45, 25)
+                        self.resetScreen()
+                        self.render()
+                        # Timer
+                        time.sleep(1.5)
+
+                    # Resultado final
+                    self.finalScreen()
+                    # Matriz A (U)
+                    self.exibeMatriz(passosA[len(passosA) - 1], 140, 205, 55, 30, 25)
+                    # Matriz L
+                    self.exibeMatriz(passosL[len(passosL) - 1], 460, 205, 55, 30, 25)
+                    # vetor b
+                    self.exibeVetor(b, 165, 375, 30, 30)
+                    # vetor y
+                    self.exibeVetor(y, 390, 375, 30, 30)
+                    # vetor x
+                    self.exibeVetor(x, 600, 375, 30, 30)
+                    self.resetScreen()
+                    self.render()
+
+                else:
+                    self.warningSUScreen()
+                    self.resetScreen()
+                    self.render()
+
+            else:
+                self.warningDZScreen()
                 self.resetScreen()
                 self.render()
-                # Timer
-                time.sleep(1.5)
-
-            # Resultado final
-            self.finalScreen()
-            # Matriz A (U)
-            self.exibeMatriz(passosA[len(passosA) - 1], 140, 205, 55, 30, 25)
-            # Matriz L
-            self.exibeMatriz(passosL[len(passosL) - 1], 460, 205, 55, 30, 25)
-            # vetor b
-            self.exibeVetor(b, 165, 375, 30, 30)
-            # vetor y
-            self.exibeVetor(y, 390, 375, 30, 30)
-            # vetor x
-            self.exibeVetor(x, 600, 375, 30, 30)
-            self.resetScreen()
-            self.render()
 
         else:
             print("Matriz incompleta")
